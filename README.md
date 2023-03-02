@@ -22,6 +22,11 @@ python server.py
 
 By default, the server will listen for incoming connections on port 3721. Once a client connects to the server, the server will begin processing requests and communicating with the appropriate restaurants to fulfill orders.
 
+To expose port from NAT and Firewalls, use port forwarding tools such as [ngrok](https://ngrok.com/docs/getting-started):
+```bash
+ngrok tcp 3721
+```
+
 ## Contributing
 
 Contributions to AirBite are welcome! If you find a bug or have a feature request, please open an issue in the issue tracker. If you'd like to contribute code, please fork the repository and submit a pull request.
