@@ -27,6 +27,16 @@ To expose port from NAT and Firewalls, use port forwarding tools such as [ngrok]
 ngrok tcp 3721
 ```
 
+## Commands
+
+Currently supported commands:
+```
+register username password
+login username password
+list restaurant
+exit
+```
+
 ## Contributing
 
 Contributions to AirBite are welcome! If you find a bug or have a feature request, please open an issue in the issue tracker. If you'd like to contribute code, please fork the repository and submit a pull request.
