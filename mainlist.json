@@ -1,0 +1,22 @@
+{
+    "users": [
+        {
+            "name": "John Doe",
+            "email": "John.Doe@example.com",
+            "password": "password",
+            "role": "passenger"
+        },
+        {
+            "name": "Jane Doe",
+            "email": "Jane.Doe@example.com",
+            "password": "password",
+            "role": "passenger"
+        },
+        {
+            "name": "Ming Lei",
+            "email": "mlei@qc.cuny.edu",
+            "password": "passwd",
+            "role": "passenger"
+        }
+    ]
+}

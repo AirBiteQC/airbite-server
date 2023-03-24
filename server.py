@@ -10,8 +10,9 @@ PORT = 3721
 # dict to store the active clients: username to corresponding (conn, addr) pair
 clients = {}
 # read json file
-with open('masterlist.json') as f:
-    masterlist = json.load(f)
+with open('mainlist.json') as f:
+    mainlist = json.load(f)
+filechanged = False
 
 def handle_client(conn, addr):
     # keep listening to incoming data from the client
@@ -30,20 +31,35 @@ def handle_client(conn, addr):
             conn.send(b'<html><body><h1>AirBite Server</h1><p>Use a client to access server: https://github.com/AirBiteQC/airbite-client</p></body></html>')
             return
         # display second and third tokens, if first token of message is "register"
-        elif data.decode("utf-8").strip().split()[0] == "register":
-            print("Registration attempt from", data.decode("utf-8").strip().split()
-                  [1], "with password", data.decode("utf-8").strip().split()[2])
-        # display second and third tokens, if first token of message is "login"
-        elif data.decode("utf-8").strip().split()[0] == "login":
-            print("Login attempt from", data.decode("utf-8").strip().split()[1], "with password", data.decode("utf-8").strip().split()[2])
+        elif data.decode("utf-8").strip().split("|")[0] == "register":
+            print("Registration attempt from", data.decode("utf-8").strip().split("|")
+                  [1], "and email", data.decode("utf-8").strip().split("|")[2], "with password", data.decode("utf-8").strip().split("|")[3])
             # check if email exists
-            if data.decode("utf-8").strip().split()[1] in (user["email"] for user in masterlist["users"]):
+            if data.decode("utf-8").strip().split("|")[2] in (user["email"] for user in mainlist["users"]):
+                print("Registration failed (email already exists)")
+                conn.sendall(b"Registration failed (email already exists)\r\n")
+            else:
+                print("Registration successful")
+                conn.sendall(b"Registration successful\r\n")
+                # add to users list
+                mainlist["users"].append(
+                    {"name": data.decode("utf-8").strip().split("|")[1], "email": data.decode("utf-8").strip().split("|")[2], "password": data.decode("utf-8").strip().split("|")[3], "role": "passenger"})
+                print("Users list:", mainlist["users"])
+                global filechanged # https://stackoverflow.com/questions/423379/using-global-variables-in-a-function-other-than-the-one-that-created-them
+                filechanged = True
+        # display second and third tokens, if first token of message is "login"
+        elif data.decode("utf-8").strip().split("|")[0] == "login":
+            print("Login attempt from", data.decode("utf-8").strip().split("|")[1], "with password", data.decode("utf-8").strip().split("|")[2])
+            # check if email exists
+            if data.decode("utf-8").strip().split("|")[1] in (user["email"] for user in mainlist["users"]):
                 # check if password is correct
-                if data.decode("utf-8").strip().split()[2] == next(user["password"] for user in masterlist["users"] if user["email"] == data.decode("utf-8").strip().split()[1]):
+                if data.decode("utf-8").strip().split("|")[2] == next(user["password"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]):
                     print("Login successful")
                     conn.sendall(b"Login successful\r\n")
+                    # send user name and role
+                    conn.sendall((next(user["name"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]) + "|" + next(user["role"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]) + "\r\n").encode("utf-8"))
                     # add to clients dict
-                    clients[data.decode("utf-8").strip().split()[1]] = (conn, addr)
+                    clients[data.decode("utf-8").strip().split("|")[1]] = (conn, addr)
                     print("Clients dict:", clients)
                 else:
                     print("Login failed")
@@ -51,10 +67,11 @@ def handle_client(conn, addr):
             else:
                 print("Login failed")
                 conn.sendall(b"Login failed\r\n")
-        elif data.decode("utf-8").strip().split()[0] == "list" and data.decode("utf-8").strip().split()[1] == "restaurant":
+        elif data.decode("utf-8").strip().split("|")[0] == "list" and data.decode("utf-8").strip().split("|")[1] == "restaurant":
             print("List restaurant placeholder here")
-        # close connection, if first token of message is "exit"
-        elif data.decode("utf-8").strip().split()[0] == "exit":
+            conn.sendall(b"List restaurant placeholder here\r\n")
+        # close connection, if first token of message is "logout"
+        elif data.decode("utf-8").strip().split("|")[0] == "logout":
             # find the one with same (conn, addr) and remove from clients dict
             for key, value in clients.items():
                 if value == (conn, addr):
@@ -105,6 +122,10 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("\r\nCtrl+C pressed; Closing socket")
         s.close()
+        if filechanged:
+            print("New registration occurred; Saving changes to mainlist.json")
+            with open('mainlist.json', 'w') as f:
+                json.dump(mainlist, f, indent=4)
 
     s.close()
 

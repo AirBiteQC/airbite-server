@@ -9,7 +9,9 @@ This repository contains the server-side implementation of AirBite, which commun
 This server application has been developed and tested on Python 3. It uses the following libraries:
 
 - `socket`: for creating and managing sockets for network communication
-- `pickle`: for serializing and deserializing Python objects
+- `threading`: for creating and managing threads for concurrent processing
+- `json`: for encoding and decoding JSON data
+- `hashlib`: for hashing passwords (planned for phase 2)
 
 These libraries are included in the Python standard library and should not require any additional installation.
 
@@ -31,10 +33,10 @@ ngrok tcp 3721
 
 Currently supported commands:
 ```
-register username password
-login username password
-list restaurant
-exit
+register|name|email|password
+login|email|password
+list|restaurant
+logout
 ```
 
 ## Contributing
