@@ -54,10 +54,9 @@ def handle_client(conn, addr):
             if data.decode("utf-8").strip().split("|")[1] in (user["email"] for user in mainlist["users"]):
                 # check if password is correct
                 if data.decode("utf-8").strip().split("|")[2] == next(user["password"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]):
-                    print("Login successful")
-                    conn.sendall(b"Login successful\r\n")
+                    print("Login successful for", next(user["role"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]), "with name", next(user["name"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]))
                     # send user name and role
-                    conn.sendall((next(user["name"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]) + "|" + next(user["role"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]) + "\r\n").encode("utf-8"))
+                    conn.sendall(b"Login successful|" + (next(user["name"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]) + "|" + next(user["role"] for user in mainlist["users"] if user["email"] == data.decode("utf-8").strip().split("|")[1]) + "\r\n").encode("utf-8"))
                     # add to clients dict
                     clients[data.decode("utf-8").strip().split("|")[1]] = (conn, addr)
                     print("Clients dict:", clients)
@@ -68,9 +67,15 @@ def handle_client(conn, addr):
                 print("Login failed")
                 conn.sendall(b"Login failed\r\n")
         elif data.decode("utf-8").strip().split("|")[0] == "list" and data.decode("utf-8").strip().split("|")[1] == "restaurant":
-            print("List restaurant placeholder here")
-            conn.sendall(b"List restaurant placeholder here\r\n")
-        # close connection, if first token of message is "logout"
+            # construct a string with restaurant names (user whose role is "restaurant") separated by "|"
+            restaurantlist = ""
+            for user in mainlist["users"]:
+                if user["role"] == "restaurant":
+                    restaurantlist += user["name"] + "|"
+            restaurantlist = restaurantlist[:-1]
+            print("Sending restaurant list to client:", restaurantlist)
+            conn.sendall(json.dumps(restaurantlist).encode("utf-8") + b"\r\n")
+        # remove user from client dict, if first token of message is "logout"
         elif data.decode("utf-8").strip().split("|")[0] == "logout":
             # find the one with same (conn, addr) and remove from clients dict
             for key, value in clients.items():
@@ -78,9 +83,15 @@ def handle_client(conn, addr):
                     del clients[key]
                     break
             print("Clients dict:", clients)
+        # close connection, if first token of message is "exit"
+        elif data.decode("utf-8").strip().split("|")[0] == "exit":
             print("Closing connection")
             conn.close()
             return
+        elif data.decode("utf-8").strip() == "Hello Server":
+            print("Sending hello to client")
+            conn.sendall(b"Hello Client\r\n")
+
         else:
             # send data back to client
             print("Sending data back to client:", data.decode("utf-8"))
@@ -126,7 +137,7 @@ if __name__ == '__main__':
             print("New registration occurred; Saving changes to mainlist.json")
             with open('mainlist.json', 'w') as f:
                 json.dump(mainlist, f, indent=4)
+        exit()
 
-    s.close()
 
 

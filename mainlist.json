@@ -17,6 +17,18 @@
             "email": "mlei@qc.cuny.edu",
             "password": "passwd",
             "role": "passenger"
+        },
+        {
+            "name": "Panda Express",
+            "email": "panda@airbite.com",
+            "password": "panda",
+            "role": "restaurant"
+        },
+        {
+            "name": "Shalimar Kacchi",
+            "email": "sk@airbite.com",
+            "password": "sk",
+            "role": "restaurant"
         }
     ]
 }
