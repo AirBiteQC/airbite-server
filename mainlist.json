@@ -19,6 +19,12 @@
             "role": "passenger"
         },
         {
+            "name": "Hassan Test",
+            "email": "deuki1209@gmail.com",
+            "password": "password",
+            "role": "passenger"
+        },
+        {
             "name": "Panda Express",
             "email": "panda@airbite.com",
             "password": "panda",
@@ -28,6 +34,12 @@
             "name": "Shalimar Kacchi",
             "email": "sk@airbite.com",
             "password": "sk",
+            "role": "restaurant"
+        },
+        {
+            "name": "Texas Road House",
+            "email": "trh@airbite.com",
+            "password": "texas",
             "role": "restaurant"
         }
     ]

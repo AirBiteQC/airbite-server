@@ -1,6 +1,12 @@
+import random
 import socket
 import threading
 import json
+import time
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+import smtplib
+from email.mime.text import MIMEText
 
 # Listen to TCP port 3721 and print the data received from the client
 # We need to make the application externally visible (accept incoming connections from outside the container)
@@ -13,6 +19,58 @@ clients = {}
 with open('mainlist.json') as f:
     mainlist = json.load(f)
 filechanged = False
+
+private_key = open("private_key.txt", "r").read()
+# function to Decrypt string using private key
+def decrypt(encrypted_message: str, private_key: str):
+    '''
+    Decrypt string using private key.
+
+    Parameters:
+    encrypted_message (str): Encrypted message in hexadecimal encoded string format.
+
+    Returns:
+    str: Decrypted message in string format.
+    '''
+
+    cipher = PKCS1_OAEP.new(RSA.import_key(private_key))
+    decrypted_message = cipher.decrypt(bytes.fromhex(encrypted_message))
+    return decrypted_message.decode()
+
+
+def send_email(email: str, subject: str, message: str):
+    '''
+    Send email to the specified email address.
+    
+    Parameters:
+    email (str): Email address of the recipient.
+    subject (str): Subject of the email.
+    message (str): Message of the email.
+    
+    Returns:
+    None
+    '''
+    smtp_server = 'smtp.gmail.com'
+    port_number = 587
+    sender = 'airbite368@gmail.com'
+    password = 'wozholuuovycqhvp'
+    recipient = email
+
+    msg = MIMEText(message)
+    msg['Subject'] = subject
+    msg['From'] = sender
+    msg['To'] = recipient
+
+    try:
+        smtpObj = smtplib.SMTP(smtp_server, port_number)
+        smtpObj.starttls()  # establish a secure connection
+        smtpObj.login(sender, password)
+        smtpObj.sendmail(sender, recipient, msg.as_string())
+        print('Email content:', msg.as_string(), sep='\n')
+        print('Email sent successfully')
+    except smtplib.SMTPException as e:
+        print('Failed to send email. Error message: ', e)
+
 
 def handle_client(conn, addr):
     # keep listening to incoming data from the client
@@ -49,7 +107,8 @@ def handle_client(conn, addr):
                 filechanged = True
         # display second and third tokens, if first token of message is "login"
         elif data.decode("utf-8").strip().split("|")[0] == "login":
-            print("Login attempt from", data.decode("utf-8").strip().split("|")[1], "with password", data.decode("utf-8").strip().split("|")[2])
+            print("Login attempt from", data.decode("utf-8").strip().split("|")
+                  [1], "with password", data.decode("utf-8").strip().split("|")[2])
             # check if email exists
             if data.decode("utf-8").strip().split("|")[1] in (user["email"] for user in mainlist["users"]):
                 # check if password is correct
@@ -75,6 +134,31 @@ def handle_client(conn, addr):
             restaurantlist = restaurantlist[:-1]
             print("Sending restaurant list to client:", restaurantlist)
             conn.sendall(json.dumps(restaurantlist).encode("utf-8") + b"\r\n")
+        elif data.decode("utf-8").strip().split("|")[0] == "select":
+            restaurant = data.decode("utf-8").strip().split("|")[1]
+            # replace spaces with underscores
+            restaurant = restaurant.replace(" ", "_")
+            menu = ""
+            # Get the restaurant's menu from corresponding file
+            with open(restaurant + "_Menu.txt", "r") as f:
+                menu = f.read()
+            # print the first 100 characters of the menu
+            print("Sending menu to client:", menu[:100] + "...(truncated)")
+            conn.sendall(menu.encode("utf-8") + b"\r\n")
+        elif data.decode("utf-8").strip().split("|")[0] == "order":
+            print("Order received from client:", data.decode("utf-8").strip())
+            # get the restaurant email
+            restaurantemail = next(user["email"] for user in mainlist["users"] if user["name"] == data.decode("utf-8").strip().split("|")[3])
+            # sleep for random time between 5 and 10 seconds
+            time.sleep(random.randint(5, 10))
+            # send email to passenger
+            send_email(data.decode("utf-8").strip().split("|")[2], "AirBite: Your order has been received", "Dear " + data.decode("utf-8").strip().split("|")[1] + ",\n\nYour order for restaurant " + data.decode("utf-8").strip().split("|")[3] + " has been received and will be delivered to you shortly.\n\nRegards,\nAirBite")
+            # # get the restaurant's socket from clients dict
+            # restaurantsocket = next(value[0] for key, value in clients.items() if key == restaurantemail)
+            # # send order to restaurant
+            # restaurantsocket.sendall(data)
+            print("Order sent to restaurant")
+            
         # remove user from client dict, if first token of message is "logout"
         elif data.decode("utf-8").strip().split("|")[0] == "logout":
             # find the one with same (conn, addr) and remove from clients dict
@@ -120,6 +204,8 @@ if __name__ == '__main__':
     print("Server on", get_ip(),
           "started, listening on port", PORT, "...")
     print("Press Ctrl+C to close socket.")
+
+    # send_email("deuki1209@gmail.com", "test", "test message")
 
     try:
         while 1:
